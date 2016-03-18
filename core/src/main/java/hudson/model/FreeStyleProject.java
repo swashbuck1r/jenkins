@@ -25,6 +25,8 @@ package hudson.model;
 
 import hudson.Extension;
 import jenkins.model.Jenkins;
+import jenkins.model.item_category.DefaultCategories;
+
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
@@ -72,5 +74,10 @@ public class FreeStyleProject extends Project<FreeStyleProject,FreeStyleBuild> i
         public FreeStyleProject newInstance(ItemGroup parent, String name) {
             return new FreeStyleProject(parent,name);
         }
+
+		@Override
+		public String getCategoryId() {
+			return DefaultCategories.STANDALONE_CATEGORY_ID;
+		}
     }
 }

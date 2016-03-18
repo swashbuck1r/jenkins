@@ -23,10 +23,20 @@
  */
 package hudson.model;
 
+import java.io.StringWriter;
+
 import hudson.ExtensionList;
 import jenkins.model.Jenkins;
+
 import org.acegisecurity.AccessDeniedException;
+import org.apache.commons.jelly.Script;
+import org.apache.commons.jelly.XMLOutput;
+import org.kohsuke.stapler.MetaClass;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.WebApp;
+import org.kohsuke.stapler.jelly.DefaultScriptInvoker;
+import org.kohsuke.stapler.jelly.JellyClassTearOff;
 
 /**
  * {@link Descriptor} for {@link TopLevelItem}s.
@@ -111,6 +121,30 @@ public abstract class TopLevelItemDescriptor extends Descriptor<TopLevelItem> {
     @Override
     public String getDisplayName() {
         return super.getDisplayName();
+    }
+    
+    public String getDescription() {
+    	try{
+	    	WebApp webapp = WebApp.getCurrent();
+	        MetaClass meta = webapp.getMetaClass(super.clazz);
+	        Script s = meta.loadTearOff(JellyClassTearOff.class).resolveScript("newJobDetail");
+	        DefaultScriptInvoker dsi = new DefaultScriptInvoker();
+	        StringWriter sw = new StringWriter();
+	        XMLOutput xml = dsi.createXMLOutput(sw, true);
+	        dsi.invokeScript(Stapler.getCurrentRequest(), Stapler.getCurrentResponse(), s, meta, xml);
+	        return sw.toString();
+    	}
+    	catch(Exception e) {
+    		return "";
+    	}
+    }
+    
+    public String getIconFilePathPattern() { 
+    	return "";
+    }
+    
+    public String getCategoryId() { 
+    	return "";
     }
 
     /**

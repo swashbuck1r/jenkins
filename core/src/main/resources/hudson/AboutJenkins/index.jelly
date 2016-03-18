@@ -36,6 +36,7 @@ THE SOFTWARE.
         ${%dependencies}
       </p>
       <j:set var="uri" value="${it.licensesURL}"/>
+      ${it.licensesURL}
       <j:choose>
           <j:when test="${uri != null}">
               <t:thirdPartyLicenses>
@@ -47,22 +48,26 @@ THE SOFTWARE.
           </j:otherwise>
       </j:choose>
       <p>${%plugin.dependencies}</p>
-      <ul>
-          <j:forEach var="p" items="${app.pluginManager.plugins}"> <!-- TODO sort -->
-              <li>
-                  <a href="${rootURL}/pluginManager/plugin/${p.shortName}/thirdPartyLicenses">
-                      <j:choose>
-                          <j:when test="${p.active}">
-                              ${p.displayName}
-                          </j:when>
-                          <j:otherwise>
-                              <strike>${p.displayName}</strike>
-                          </j:otherwise>
-                      </j:choose>
-                  </a>
-              </li>
-          </j:forEach>
-      </ul>
+      <j:forEach var="p" items="${app.pluginManager.plugins}"> <!-- TODO sort -->
+          <j:choose>
+              <j:when test="${p.active}">
+                  <h3>${p.displayName}</h3>
+                  <t:thirdPartyLicenses>
+                    <j:choose>
+                      <j:when test="${p.hasLicensesXml()}">
+                        <j:include uri="${p.baseResourceURL}/WEB-INF/licenses.xml" />
+                      </j:when>
+                      <j:otherwise>
+                        <p>${%No information recorded}</p>
+                      </j:otherwise>
+                    </j:choose>
+                  </t:thirdPartyLicenses>
+              </j:when>
+              <j:otherwise>
+                  <strike>${p.displayName}</strike>
+              </j:otherwise>
+          </j:choose>
+      </j:forEach>
     </l:main-panel>
   </l:layout>
 </j:jelly>

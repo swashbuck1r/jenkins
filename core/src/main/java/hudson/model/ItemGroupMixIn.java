@@ -23,6 +23,7 @@
  */
 package hudson.model;
 
+import hudson.ExtensionList;
 import hudson.Util;
 import hudson.XmlFile;
 import hudson.model.listeners.ItemListener;
@@ -31,11 +32,14 @@ import hudson.util.CopyOnWriteMap;
 import hudson.util.Function1;
 import jenkins.model.item_category.Categories;
 import jenkins.model.item_category.Category;
+import jenkins.model.item_category.CategoryProvider;
+import jenkins.model.item_category.DefaultCategories;
 import jenkins.model.item_category.ItemCategory;
-import jenkins.model.item_category.ItemCategoryConfigurator;
 import jenkins.model.Jenkins;
 import jenkins.util.xml.XMLUtils;
+
 import org.acegisecurity.Authentication;
+import org.apache.commons.collections.IteratorUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -45,6 +49,7 @@ import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -52,11 +57,14 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import jenkins.security.NotReallyRoleSensitiveCallable;
+
 import org.xml.sax.SAXException;
 
 /**
@@ -344,28 +352,29 @@ public abstract class ItemGroupMixIn {
      */
     public static Categories getCategories(Authentication a, ItemGroup c) {
         Categories categories = new Categories();
-        for (TopLevelItemDescriptor descriptor : DescriptorVisibilityFilter.apply(c, Items.all(a, c))) {
-            String effectiveClazz = ItemCategoryConfigurator.getEffectiveClazz(descriptor);
-            ItemCategory ic = ItemCategoryConfigurator.getCategory(descriptor);
-            Map<String, Serializable> metadata = new HashMap<String, Serializable>();
-
-            // Information about Item.
-            metadata.put("class", effectiveClazz);
-            metadata.put("weight", ItemCategoryConfigurator.getWeight(descriptor));
-            metadata.put("displayName", descriptor.getDisplayName());
-            metadata.put("description", ItemCategoryConfigurator.getDescription(descriptor));
-            metadata.put("iconFilePathPattern", ItemCategoryConfigurator.getIconFilePathPattern(descriptor));
-
-            Category category = categories.getItem(ic.getId());
-            if (category != null) {
-                category.getItems().add(metadata);
-            } else {
-                List<Map<String, Serializable>> temp = new ArrayList<Map<String, Serializable>>();
-                temp.add(metadata);
-                category = new Category(ic.getId(), ic.getDisplayName(), ic.getDescription(), ic.getWeight(), ic.getMinToShow(), temp);
-                categories.getItems().add(category);
-            }
+        
+        for(CategoryProvider cp : ExtensionList.lookup(CategoryProvider.class)) {
+        	for(Category category : cp.getCategories()) {
+        		categories.getItems().add(category);
+        	}
         }
+        
+        for (TopLevelItemDescriptor descriptor : DescriptorVisibilityFilter.apply(c, Items.all(a, c))) {
+	        Map<String, Serializable> metadata = new HashMap<String, Serializable>();
+	
+	        // Information about Item.
+	        metadata.put("class", descriptor.clazz.getName());
+	        metadata.put("weight", "0"); //TODO: where should this come from?
+	        metadata.put("displayName", descriptor.getDisplayName());
+	        metadata.put("description", descriptor.getDescription());
+	        metadata.put("iconFilePathPattern", descriptor.getIconFilePathPattern());
+	        
+	        Category category = categories.getItem(descriptor.getCategoryId());
+	        if(category == null) {
+	        	category = categories.getItem(DefaultCategories.DEFAULT_CATEGORY_ID);
+	        }
+	        category.getItems().add(metadata);
+	    }
         return categories;
     }
 
