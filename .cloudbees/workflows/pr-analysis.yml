@@ -1,7 +1,6 @@
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
-name: Example PR Analysis with Claude
-
+name: PR Analysis with Claude
 
 on:
   pull_request:
@@ -14,19 +13,11 @@ jobs:
   analyze-pr:
     steps:
       - name: Analyze PR
-        uses: .
+        id: analysis
+        uses: swashbuck1r/claude-ci-tools@main
         with:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ cloudbees.scm.pull_request.number }}
           repository: ${{ cloudbees.scm.repository_full_name }}
           post-comment: "true"
-
-      - name: Check Quality Score
-        uses: docker://alpine:3.20
-        shell: sh
-        if: ${{ steps.analyze-pr.outputs.quality-score < 7 }}
-        run: |
-          echo "⚠️ Quality score is below threshold: ${{ steps.analyze-pr.outputs.quality-score }}/10"
-          echo "Please review the analysis and address the issues"
-          exit 1
